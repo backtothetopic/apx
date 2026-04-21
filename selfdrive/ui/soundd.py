@@ -115,6 +115,10 @@ class Soundd:
     data_out[:frames, 0] = self.get_sound_data(frames)
 
   def update_alert(self, new_alert):
+    # tesla-unity integration: suppress openpilot engage/disengage chimes so only
+    # the stock Tesla sounds play on AP engage/disengage.
+    if new_alert in (AudibleAlert.engage, AudibleAlert.disengage):
+      new_alert = AudibleAlert.none
     current_alert_played_once = self.current_alert == AudibleAlert.none or self.current_sound_frame > len(self.loaded_sounds[self.current_alert])
     if self.current_alert != new_alert and (new_alert != AudibleAlert.none or current_alert_played_once):
       self.current_alert = new_alert
