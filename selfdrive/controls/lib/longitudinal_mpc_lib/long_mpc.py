@@ -70,15 +70,29 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
     raise NotImplementedError("Longitudinal personality not supported")
 
 
+# Tesla distance-knob: 7-level follow-distance table driven by TeslaGapLevel param.
+# Level 1 (idx 0) is tighter than stock Aggressive (1.25s). Level 7 (idx 6) equals stock Standard (1.45s).
+# Stop-and-go behavior scales naturally with speed since these are time-based.
+_TESLA_GAP_T_FOLLOW = [0.90, 1.00, 1.10, 1.20, 1.28, 1.36, 1.45]
+
+# Lazy singleton so importing this module doesn't require the Params DB to exist at import time
+_tesla_params = None
+def _get_tesla_gap_level():
+  global _tesla_params
+  if _tesla_params is None:
+    from openpilot.common.params import Params
+    _tesla_params = Params()
+  try:
+    raw = _tesla_params.get("TeslaGapLevel", return_default=True)
+    idx = int(raw) if raw is not None else 3
+  except (ValueError, TypeError):
+    idx = 3
+  return max(0, min(6, idx))
+
+
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
-  if personality==log.LongitudinalPersonality.relaxed:
-    return 1.75
-  elif personality==log.LongitudinalPersonality.standard:
-    return 1.45
-  elif personality==log.LongitudinalPersonality.aggressive:
-    return 1.25
-  else:
-    raise NotImplementedError("Longitudinal personality not supported")
+  # personality arg is ignored - TeslaGapLevel is the sole source of truth for follow distance
+  return _TESLA_GAP_T_FOLLOW[_get_tesla_gap_level()]
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
