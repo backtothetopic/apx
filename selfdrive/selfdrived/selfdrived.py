@@ -394,13 +394,10 @@ class SelfdriveD:
       if self.sm['modelV2'].frameDropPerc > 20:
         self.events.add(EventName.modeldLagging)
 
-    # Cycle Tesla gap level (7 steps) on distance button press. Level index 0..6 = UI Level 1..7.
-    # Level 1 is tighter than stock Aggressive; Level 7 equals stock Standard. See long_mpc.py T_FOLLOW table.
+    # Tesla distance knob: carstate mirrors the physical knob position into TeslaGapLevel
+    # and emits a gapAdjustCruise buttonEvent when the level changes. Show a toast on change.
     if self.CP.openpilotLongitudinalControl:
-      if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
-        level = int(self.params.get("TeslaGapLevel", return_default=True) or 3)
-        level = (level + 1) % 7
-        self.params.put_nonblocking('TeslaGapLevel', level)
+      if any(be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
         self.events.add(EventName.personalityChanged)
 
   def data_sample(self):
